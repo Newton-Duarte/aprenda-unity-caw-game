@@ -12,6 +12,7 @@ public enum direction
 public class EnemyIA : MonoBehaviour
 {
     private GameController _gameController;
+    private OptionsController _optionsController;
     private SpriteRenderer enemySr;
     private Material whiteMaterial;
     private Material defaultMaterial;
@@ -38,8 +39,7 @@ public class EnemyIA : MonoBehaviour
     [Header("Health Config.")]
     public int healthPoints;
 
-    [Header("Fx Config.")]
-    public AudioSource fxSource;
+    [Header("Fx Clips")]
     public AudioClip fxShot;
 
     [Header("Score Config.")]
@@ -49,6 +49,7 @@ public class EnemyIA : MonoBehaviour
     void Start()
     {
         _gameController = FindObjectOfType(typeof(GameController)) as GameController;
+        _optionsController = FindObjectOfType(typeof(OptionsController)) as OptionsController;
         enemySr = GetComponent<SpriteRenderer>();
         rotationZ = transform.rotation.eulerAngles.z;
         whiteMaterial = Resources.Load("WhiteFlash", typeof(Material)) as Material;
@@ -159,7 +160,7 @@ public class EnemyIA : MonoBehaviour
         GameObject temp = Instantiate(_gameController.bulletsPrefab[idBullet], weapon.position, transform.localRotation);
         temp.transform.tag = _gameController.getBulletTag(bulletTag);
         temp.GetComponent<Rigidbody2D>().velocity = transform.up * -1 * bulletSpeed;
-        fxSource.PlayOneShot(fxShot);
+        _optionsController.playShotSound(fxShot);
     }
 
     IEnumerator shotControl()
