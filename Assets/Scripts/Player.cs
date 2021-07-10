@@ -6,6 +6,7 @@ using UnityEngine;
 public class Player : MonoBehaviour
 {
     private GameController _gameController;
+    private OptionsController _optionsController;
     private Rigidbody2D playerRb;
     private SpriteRenderer playerSr;
     public SpriteRenderer planeGasSr;
@@ -28,13 +29,13 @@ public class Player : MonoBehaviour
     private int powerUpLevel;
     private bool isFire;
 
-    [Header("FX Config.")]
-    public AudioSource fxSource;
+    [Header("FX Clips")]
     public AudioClip fxShot;
 
     private void Awake()
     {
         _gameController = FindObjectOfType(typeof(GameController)) as GameController;
+        _optionsController = FindObjectOfType(typeof(OptionsController)) as OptionsController;
         _gameController._player = this;
     }
 
@@ -70,7 +71,7 @@ public class Player : MonoBehaviour
         temp.transform.tag = _gameController.getBulletTag(bulletTag);
         temp.transform.position = weaponPos.position;
         temp.GetComponent<Rigidbody2D>().velocity = new Vector2(0, bulletSpeed);
-        fxSource.PlayOneShot(fxShot);
+        _optionsController.playShotSound(fxShot);
         StartCoroutine("shotControl");
     }
 
