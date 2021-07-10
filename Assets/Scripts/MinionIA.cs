@@ -7,6 +7,7 @@ using UnityEngine;
 public class MinionIA : MonoBehaviour
 {
     private GameController _gameController;
+    private OptionsController _optionsController;
     private SpriteRenderer enemySr;
     private Collider2D enemyCol;
     private Material whiteMaterial;
@@ -23,17 +24,19 @@ public class MinionIA : MonoBehaviour
     [Header("Health Config.")]
     public int healthPoints;
 
-    [Header("Fx Config.")]
-    public AudioSource fxSource;
+    [Header("Fx Clips")]
     public AudioClip fxShot;
 
     [Header("Score Config.")]
     public int points;
 
+    bool isActive;
+
     // Start is called before the first frame update
     void Start()
     {
         _gameController = FindObjectOfType(typeof(GameController)) as GameController;
+        _optionsController = FindObjectOfType(typeof(OptionsController)) as OptionsController;
         enemySr = GetComponent<SpriteRenderer>();
         enemyCol = GetComponent<Collider2D>();
         whiteMaterial = Resources.Load("WhiteFlash", typeof(Material)) as Material;
@@ -43,12 +46,17 @@ public class MinionIA : MonoBehaviour
         enabled = false;
     }
 
-    private void OnBecameVisible()
+    private void Update()
     {
-        enabled = true;
-        StartCoroutine(activeCollider());
-        StartCoroutine(shotControl());
+        if (_gameController.currentState == gameState.bossFight && !isActive)
+        {
+            isActive = true;
+            StartCoroutine(activeCollider());
+            StartCoroutine(shotControl());
+        }
     }
+
+    private void OnBecameVisible() => enabled = true;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -102,29 +110,18 @@ public class MinionIA : MonoBehaviour
             GameObject temp = Instantiate(_gameController.bulletsPrefab[idBullet], weapon.position, transform.localRotation);
             temp.transform.tag = _gameController.getBulletTag(bulletTag);
             temp.GetComponent<Rigidbody2D>().velocity = transform.up * -1 * bulletSpeed;
-            fxSource.PlayOneShot(fxShot);
+            _optionsController.playShotSound(fxShot);
         }
     }
 
     IEnumerator activeCollider()
     {
-        while (_gameController.currentState != gameState.bossFight)
-        {
-            yield return new WaitForSeconds(1.5f);
-            StartCoroutine(activeCollider());
-        }
-
+        yield return new WaitForSeconds(1.5f);
         enemyCol.enabled = true;
     }
 
     IEnumerator shotControl()
     {
-        while (_gameController.currentState != gameState.bossFight)
-        {
-            yield return new WaitForSeconds(2);
-            StartCoroutine(shotControl());
-        }
-
         yield return new WaitForSeconds(shotDelay);
         shot();
         StartCoroutine(shotControl());
