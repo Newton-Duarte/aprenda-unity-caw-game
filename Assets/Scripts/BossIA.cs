@@ -7,6 +7,7 @@ using UnityEngine;
 public class BossIA : MonoBehaviour
 {
     private GameController _gameController;
+    private OptionsController _optionsController;
     private EnemyController _enemyController;
     private SpriteRenderer enemySr;
     private Collider2D enemyCol;
@@ -24,8 +25,7 @@ public class BossIA : MonoBehaviour
     [Header("Health Config.")]
     public int healthPoints;
 
-    [Header("Fx Config.")]
-    public AudioSource fxSource;
+    [Header("Fx Clips")]
     public AudioClip fxShot;
 
     [Header("Score Config.")]
@@ -38,10 +38,13 @@ public class BossIA : MonoBehaviour
     public float powerUpTime;
     private bool isPowerUp;
 
+    bool isActive;
+
     // Start is called before the first frame update
     void Start()
     {
         _gameController = FindObjectOfType(typeof(GameController)) as GameController;
+        _optionsController = FindObjectOfType(typeof(OptionsController)) as OptionsController;
         _enemyController = FindObjectOfType(typeof(EnemyController)) as EnemyController;
         enemySr = GetComponent<SpriteRenderer>();
         enemyCol = GetComponent<Collider2D>();
@@ -52,13 +55,18 @@ public class BossIA : MonoBehaviour
         enabled = false;
     }
 
-    private void OnBecameVisible()
+    private void Update()
     {
-        enabled = true;
-        StartCoroutine(activeCollider());
-        StartCoroutine(shotControl());
-        StartCoroutine(powerUpControl());
+        if(_gameController.currentState == gameState.bossFight && !isActive)
+        {
+            isActive = true;
+            StartCoroutine(activeCollider());
+            StartCoroutine(shotControl());
+            StartCoroutine(powerUpControl());
+        }
     }
+
+    private void OnBecameVisible() => enabled = true;
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
@@ -116,29 +124,18 @@ public class BossIA : MonoBehaviour
             GameObject temp = Instantiate(_gameController.bulletsPrefab[idBullet], weapon.position, weapon.localRotation);
             temp.transform.tag = _gameController.getBulletTag(bulletTag);
             temp.GetComponent<Rigidbody2D>().velocity = weapon.up * bulletSpeed;
-            fxSource.PlayOneShot(fxShot);
+            _optionsController.playShotSound(fxShot);
         }
     }
 
     IEnumerator activeCollider()
     {
-        while (_gameController.currentState != gameState.bossFight)
-        {
-            yield return new WaitForSeconds(1.5f);
-            StartCoroutine(activeCollider());
-        }
-
+        yield return new WaitForSeconds(1.5f);
         enemyCol.enabled = true;
     }
 
     IEnumerator shotControl()
     {
-        while (_gameController.currentState != gameState.bossFight)
-        {
-            yield return new WaitForSeconds(2);
-            StartCoroutine(shotControl());
-        }
-
         yield return new WaitForSeconds(shotDelay);
         shot();
         StartCoroutine(shotControl());
@@ -146,13 +143,7 @@ public class BossIA : MonoBehaviour
 
     IEnumerator powerUpControl()
     {
-        while (_gameController.currentState != gameState.bossFight)
-        {
-            yield return new WaitForSeconds(2);
-            StartCoroutine(powerUpControl());
-        }
-
-        yield return new WaitForSeconds(6);
+        yield return new WaitForSeconds(3f);
 
         int rand = Random.Range(0, 100);
 
@@ -162,14 +153,11 @@ public class BossIA : MonoBehaviour
             StartCoroutine(powerUp());
         }
 
-        yield return new WaitForSeconds(6);
-
         StartCoroutine(powerUpControl());
     }
 
     IEnumerator powerUp()
     {
-        StopCoroutine(powerUpControl());
         isPowerUp = true;
 
         float currentShotDelay = shotDelay;
@@ -187,9 +175,6 @@ public class BossIA : MonoBehaviour
         _enemyController.moveSpeed = currentMoveSpeed;
         isPowerUp = false;
         print("Power up! OFF");
-
-        yield return new WaitForSeconds(6);
-        StartCoroutine(powerUpControl());
     }
 
     private void spawnLoot()
