@@ -3,7 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 
 public enum bulletsTag
 {
@@ -17,6 +16,9 @@ public enum gameState
 
 public class GameController : MonoBehaviour
 {
+    TransitionController _transitionController;
+    OptionsController _optionsController;
+
     [Header("Game Config.")]
     public gameState currentState;
 
@@ -86,8 +88,11 @@ public class GameController : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        _transitionController = FindObjectOfType(typeof(TransitionController)) as TransitionController;
+        _optionsController = FindObjectOfType(typeof(OptionsController)) as OptionsController;
+
         bonus = bonusInterval;
-        StartCoroutine("levelIntro");
+        StartCoroutine(levelIntro());
         updateExtraLivesText();
         updateScoreText();
         getHighScore();
@@ -176,10 +181,9 @@ public class GameController : MonoBehaviour
             {
                 currentState = gameState.endGame;
 
-                musicSource.Stop();
-                fxSource.pitch = 1;
-                fxSource.volume = 0.7f;
-                fxSource.PlayOneShot(fxCompleted);
+                _optionsController.musicSource.Stop();
+                _optionsController.fxSource.pitch = 1;
+                _optionsController.playFXSound(fxCompleted);
                 Invoke("win", 4);
             }
         }
@@ -188,34 +192,38 @@ public class GameController : MonoBehaviour
     private void gameover()
     {
         print("Game Over!");
-        SceneManager.LoadScene(2);
+        _optionsController.musicSource.Stop();
+        _transitionController.startFade(4);
     }
 
     private void win()
     {
         print("You Win!");
-        SceneManager.LoadScene(3);
+        _transitionController.startFade(5);
     }
 
     IEnumerator changeBossMusic()
     {
-        musicSource.Stop();
-        float currentVolume = fxSource.volume;
-        fxSource.volume = 1;
-        fxSource.PlayOneShot(bossSpeak);
+        //musicSource.Stop();
+        _optionsController.musicSource.Stop();
+        //float currentVolume = fxSource.volume;
+        //fxSource.volume = 1;
+        //fxSource.PlayOneShot(bossSpeak);
+        _optionsController.playFXSound(bossSpeak);
 
         yield return new WaitForSeconds(2);
-        fxSource.volume = currentVolume;
+        //fxSource.volume = currentVolume;
         changeMusic(bossMusic);
     }
 
     private void changeMusic(AudioClip clip)
     {
-        musicSource.volume = Mathf.Lerp(musicSource.volume, 0.00f, Time.deltaTime * 2);
-        musicSource.Stop();
-        musicSource.clip = clip;
-        musicSource.Play();
-        musicSource.volume = Mathf.Lerp(musicSource.volume, 1f, Time.deltaTime * 2);
+        _optionsController.StartCoroutine(_optionsController.changeMusic(clip));
+        //musicSource.volume = Mathf.Lerp(musicSource.volume, 0.00f, Time.deltaTime * 2);
+        //musicSource.Stop();
+        //musicSource.clip = clip;
+        //musicSource.Play();
+        //musicSource.volume = Mathf.Lerp(musicSource.volume, 1f, Time.deltaTime * 2);
         currentMusic++;
     }
 
@@ -302,11 +310,10 @@ public class GameController : MonoBehaviour
         _player.transform.localScale = new Vector3(playerInitialScale, playerInitialScale, playerInitialScale);
         _player.planeGasSr.color = initialPlaneGasColor;
         _player.planeShadow.SetActive(false);
-        _player.fxSource.pitch = 1;
-        _player.fxSource.volume = 1;
-        _player.fxSource.PlayOneShot(fxIntro);
+        _optionsController.fxSource.pitch = 1;
+        _optionsController.fxSource.PlayOneShot(fxIntro);
 
-        yield return new WaitForSeconds(2);
+        yield return new WaitForSeconds(2f);
 
         isTakeOff = true;
 
@@ -318,11 +325,9 @@ public class GameController : MonoBehaviour
 
     IEnumerator takeOff()
     {
-        musicSource.clip = levelMusic;
-        musicSource.Play();
+        _optionsController.StartCoroutine(_optionsController.changeMusic(levelMusic));
 
-        _player.fxSource.pitch = 2;
-        _player.fxSource.volume = 0.1f;
+        _optionsController.fxSource.pitch = 1.5f;
         _player.planeGasSr.enabled = true;
         _player.planeShadow.SetActive(true);
         StartCoroutine(resetCameraSize());
@@ -373,16 +378,16 @@ public class GameController : MonoBehaviour
 
     public void playBonusFx()
     {
-        fxSource.PlayOneShot(fxBonus);
+        _optionsController.playFXSound(fxBonus);
     }
 
     public void playCollectFx()
     {
-        fxSource.PlayOneShot(fxCollect);
+        _optionsController.playFXSound(fxCollect);
     }
 
     public void playExplosionFx()
     {
-        fxSource.PlayOneShot(fxExplosion);
+        _optionsController.playFXSound(fxExplosion);
     }
 }
